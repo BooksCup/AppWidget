@@ -1,6 +1,20 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
     package="com.bc.appwidget">
+
+    <!-- 在SDCard中创建与删除文件权限 -->
+    <uses-permission android:name="android.permission.MOUNT_UNMOUNT_FILESYSTEMS" />
+    <!-- 往SDCard写入数据权限 -->
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.INTERNET" />
+
+    <supports-screens
+        android:anyDensity="true"
+        android:largeScreens="true"
+        android:normalScreens="true"
+        android:smallScreens="true"
+        android:xlargeScreens="true" />
 
     <application
         android:allowBackup="true"
@@ -9,15 +23,33 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
-        <receiver android:name=".CalendarAppWidget">
-            <intent-filter>
-                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
-            </intent-filter>
-
+        <receiver android:name=".widget.ScheduleAppWidget">
             <meta-data
                 android:name="android.appwidget.provider"
-                android:resource="@xml/calendar_app_widget_info" />
+                android:resource="@xml/schedule_app_widget_info" />
+
+            <intent-filter>
+                <!-- 系统自动回调, 必须 -->
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+
+                <action android:name="com.bc.appwidget.action.APPWIDGET_REFRESH_MANUAL" />
+                <action android:name="com.bc.appwidget.action.APPWIDGET_REFRESH_AUTO" />
+                <action android:name="com.bc.appwidget.action.APPWIDGET_JUMP_LISTITEM" />
+                <action android:name="com.bc.appwidget.action.APPWIDGET_JUMP_LOGO" />
+            </intent-filter>
         </receiver>
+
+        <service
+            android:name=".widget.ScheduleWidgetService"
+            android:exported="false"
+            android:permission="android.permission.BIND_REMOTEVIEWS">
+            <intent-filter>
+                <!-- widget手动刷新 -->
+                <action android:name="com.bc.appwidget.action.APPWIDGET_REFRESH_MANUAL" />
+                <!-- widget自动刷新 -->
+                <action android:name="com.bc.appwidget.action.APPWIDGET_REFRESH_AUTO" />
+            </intent-filter>
+        </service>
 
         <activity android:name=".MainActivity">
             <intent-filter>
@@ -26,6 +58,36 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <!-- DaemonReceiver 服务广播 -->
+        <receiver
+            android:name=".widget.DaemonReceiver"
+            android:exported="true"
+            android:permission="com.bc.appwidget.permission.APP_WIDGET">
+            <intent-filter android:priority="0x6fffffff">
+
+                <action android:name="com.bc.appwidget.action.DAEMON_RECEIVER" />
+
+                <!-- 【必须】 系统广播：开屏和网络切换 -->
+                <action android:name="android.intent.action.USER_PRESENT" />
+                <action android:name="android.net.conn.CONNECTIVITY_CHANGE" />
+
+                <!-- 【可选】 一些常用的系统广播，增强widget service的复活机会，请根据需要选择。当然，你也可以添加APP自定义的一些广播让启动service -->
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.bluetooth.adapter.action.STATE_CHANGED" />
+                <action android:name="android.intent.action.ACTION_POWER_CONNECTED" />
+                <action android:name="android.intent.action.ACTION_POWER_DISCONNECTED" />
+            </intent-filter>
+            <!-- 【可选】 usb相关的系统广播，增强widget service的复活机会，请根据需要添加 -->
+            <intent-filter android:priority="0x6fffffff">
+                <action android:name="android.intent.action.MEDIA_UNMOUNTED" />
+                <action android:name="android.intent.action.MEDIA_REMOVED" />
+                <action android:name="android.intent.action.MEDIA_CHECKING" />
+                <action android:name="android.intent.action.MEDIA_EJECT" />
+
+                <data android:scheme="file" />
+            </intent-filter>
+        </receiver>
     </application>
 
 </manifest>
